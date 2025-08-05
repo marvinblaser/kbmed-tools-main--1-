@@ -1,0 +1,129 @@
+/* css/style.css */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+:root {
+  --font-main: "Poppins", sans-serif;
+  /* MODIFIÉ : Nouvelle palette de couleurs pour la sidebar */
+  --color-sidebar-bg: #111827; /* Bleu nuit / Gris très foncé */
+  --color-sidebar-link: #9ca3af; /* Gris clair pour le texte */
+  --color-sidebar-link-hover: #ffffff;
+  --color-primary: #6366f1; /* Indigo/Violet pour les boutons actifs */
+  --color-body-bg: #f9fafb;
+  --color-text-dark: #111827;
+  --color-text-light: #6b7280;
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-radius: 10px; /* Coins plus arrondis */
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  font-family: var(--font-main);
+  margin: 0;
+  background-color: var(--color-body-bg);
+  color: var(--color-text-dark);
+}
+.app-container {
+  display: flex;
+}
+#header-container {
+  flex-shrink: 0;
+  width: 240px;
+}
+header {
+  background-color: var(--color-sidebar-bg);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+}
+header h1 {
+  color: white;
+  text-align: center;
+  margin-bottom: 2.5rem;
+  font-weight: 700;
+  font-size: 1.75rem;
+  /* Effet de lueur subtil */
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+nav a {
+  color: var(--color-sidebar-link);
+  text-decoration: none;
+  padding: 12px 18px;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  display: block;
+}
+nav a:hover {
+  background-color: #374151;
+  color: var(--color-sidebar-link-hover);
+}
+nav a.active {
+  background-color: var(--color-primary);
+  color: white;
+  font-weight: 600;
+}
+
+/* --- Styles pour le menu déroulant --- */
+.nav-category summary {
+  color: #e5e7eb; /* Blanc cassé pour les catégories */
+  font-weight: 600;
+  padding: 12px 18px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  list-style: none; /* Cache la flèche par défaut */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+.nav-category summary:hover {
+  background-color: #374151;
+}
+.nav-category summary::after {
+  content: "›";
+  font-size: 1.5em;
+  transition: transform 0.2s ease;
+  transform: rotate(0deg);
+}
+.nav-category[open] > summary {
+  color: white;
+}
+.nav-category[open] > summary::after {
+  transform: rotate(90deg);
+}
+.nav-category ul {
+  list-style: none;
+  padding: 8px 0 8px 20px;
+  margin: 0;
+}
+.nav-category ul a {
+  font-size: 0.95em;
+  padding: 8px 18px;
+}
+
+main {
+  flex-grow: 1;
+  padding: 40px;
+  position: relative;
+  padding-bottom: 100px;
+}
+main h1 {
+  font-family: "Inter", sans-serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 2rem;
+}
+.burger-menu {
+  display: none;
+}

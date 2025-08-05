@@ -1,0 +1,205 @@
+/* css/gallery-styles.css */
+
+/* --- En-tête de la Galerie --- */
+.gallery-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem; /* Réduit pour rapprocher le fil d'Ariane */
+}
+
+/* CORRIGÉ : Le titre prend l'espace restant pour bien aligner les boutons */
+#gallery-title {
+  flex-grow: 1;
+  margin: 0; /* Annule les marges par défaut du h1 */
+}
+
+#back-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* --- Fil d'Ariane --- */
+#breadcrumbs {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap; /* Permet de passer à la ligne sur petits écrans */
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+}
+
+#breadcrumbs a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  background-color: transparent !important; /* Assure la transparence au survol */
+}
+
+#breadcrumbs a:hover {
+  text-decoration: underline;
+}
+
+#breadcrumbs span {
+  font-weight: 600;
+  color: var(--color-text-dark);
+}
+
+#breadcrumbs .separator {
+  color: #d1d5db;
+}
+
+/* --- Conteneur de la Galerie --- */
+#gallery-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+.gallery-card {
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  cursor: pointer;
+  text-align: center;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.gallery-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+}
+
+.card-image {
+  width: 100%;
+  height: 160px;
+  background-color: #f3f4f6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-title {
+  font-weight: 600;
+  padding: 1rem;
+}
+
+/* --- Styles pour la pagination --- */
+#pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2.5rem;
+}
+
+.page-btn {
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-light);
+  border-radius: 6px;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.page-btn.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- Styles pour la checklist --- */
+#checklist-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.task-item.completed {
+  opacity: 0.7;
+}
+
+.task-item.completed .task-label {
+  text-decoration: line-through;
+}
+
+.task-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.task-checkbox input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.custom-checkbox {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  margin-right: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.custom-checkbox svg {
+  width: 16px;
+  height: 16px;
+  color: white;
+  display: none;
+}
+
+.task-checkbox input:checked + .custom-checkbox {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.task-checkbox input:checked + .custom-checkbox svg {
+  display: block;
+}
+
+.task-label {
+  font-weight: 500;
+}

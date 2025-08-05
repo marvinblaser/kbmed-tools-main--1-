@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Médiathèque</title>
+
+    <!-- Styles partagés de votre site -->
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- Styles spécifiques (réutilisés) -->
+    <link rel="stylesheet" href="css/editor-styles.css" />
+    <!-- NOUVEAU : Styles pour la médiathèque -->
+    <link rel="stylesheet" href="css/mediatheque-styles.css" />
+  </head>
+  <body>
+    <!-- Le header/sidebar sera injecté ici par shared.js -->
+    <div id="header-container"></div>
+
+    <!-- Le contenu principal de la page -->
+    <main>
+      <div class="gallery-header">
+        <h1>Médiathèque</h1>
+        <div class="header-actions">
+          <button id="create-folder-btn" class="btn">Créer un dossier</button>
+          <label for="add-image-input" class="btn btn-primary">
+            Ajouter une image
+          </label>
+          <input
+            type="file"
+            id="add-image-input"
+            class="hidden"
+            accept="image/*"
+            capture="environment"
+            multiple
+          />
+        </div>
+      </div>
+
+      <!-- Fil d'Ariane pour la navigation dans les dossiers -->
+      <nav id="breadcrumbs"></nav>
+
+      <div id="media-grid">
+        <!-- Les vignettes des dossiers et images seront injectées ici -->
+      </div>
+    </main>
+
+    <!-- Scripts de votre application -->
+    <script src="js/shared.js"></script>
+    <script src="js/mediatheque.js"></script>
+  </body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fusionneur de PDF</title>
+
+    <!-- Styles partagés de votre site -->
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- Styles spécifiques à l'éditeur d'images (réutilisés) -->
+    <link rel="stylesheet" href="css/editor-styles.css" />
+    <!-- Styles spécifiques au fusionneur de PDF -->
+    <link rel="stylesheet" href="css/pdf-merger-styles.css" />
+
+    <!-- Librairies externes requises pour cette page -->
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  </head>
+  <body>
+    <!-- Le header/sidebar sera injecté ici par shared.js -->
+    <div id="header-container"></div>
+
+    <!-- Le contenu principal de la page -->
+    <main>
+      <h1>Fusionneur de PDF</h1>
+
+      <div class="upload-area">
+        <label for="pdf-loader" class="btn">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
+            />
+          </svg>
+          Sélectionner des fichiers PDF
+        </label>
+        <input
+          type="file"
+          id="pdf-loader"
+          class="hidden"
+          accept=".pdf"
+          multiple
+        />
+        <p class="upload-hint">
+          Ou glissez-déposez vos fichiers ici.
+        </p>
+      </div>
+
+      <!-- Conteneur pour la liste des PDF -->
+      <div id="pdf-list-container">
+        <!-- Les cartes PDF seront injectées ici par JS -->
+      </div>
+
+      <div class="actions-footer">
+        <button id="merge-btn" class="btn btn-primary" disabled>
+          Fusionner et Télécharger
+          <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
+              />
+              </svg>
+        </button>
+      </div>
+    </main>
+
+    <!-- Scripts de votre application -->
+    <script src="js/shared.js"></script>
+    <script src="js/pdf-merger.js"></script>
+  </body>
+</html>

@@ -1,0 +1,140 @@
+/* css/mediatheque-styles.css */
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+#breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+#breadcrumbs a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+#breadcrumbs a:hover {
+  text-decoration: underline;
+}
+#breadcrumbs span {
+  color: var(--color-text-light);
+}
+
+#media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1.5rem;
+}
+
+.media-item {
+  position: relative;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.media-item:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Style pour les dossiers */
+.folder-item {
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.folder-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--color-primary);
+}
+
+.folder-name {
+  font-weight: 500;
+  word-break: break-all;
+}
+
+/* Style pour les images */
+.media-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--border-radius);
+}
+
+.media-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  color: white;
+  padding: 1.5rem 0.75rem 0.75rem;
+  font-size: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-bottom-left-radius: var(--border-radius);
+  border-bottom-right-radius: var(--border-radius);
+}
+
+.media-item:hover .media-info {
+  opacity: 1;
+}
+
+/* Style pour le bouton d'options (trois points) */
+.options-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 2;
+}
+
+/* Menu contextuel */
+.context-menu {
+  position: absolute;
+  top: 40px;
+  right: 8px;
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+  overflow: hidden;
+  display: none; /* Caché par défaut */
+  width: 120px;
+}
+
+.context-menu button {
+  display: block;
+  width: 100%;
+  padding: 10px 15px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.context-menu button:hover {
+  background-color: #f3f4f6;
+}
