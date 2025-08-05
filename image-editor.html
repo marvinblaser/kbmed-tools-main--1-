@@ -15,51 +15,51 @@
   </head>
   <body>
     <div id="header-container"></div>
-    <section id="transfer-section" class="transfer-section">
-      <h2>Transfert d'image P2P</h2>
-      <button id="start-sender" class="btn">Mode Émission (téléphone)</button>
-      <button id="start-receiver" class="btn">Mode Réception (PC)</button>
-
-      <div id="sender-controls" class="transfer-controls" style="display: none">
-        <h3>Émission (téléphone)</h3>
-        <label>Offre SDP :</label><br />
-        <textarea id="offer-sender" rows="5" cols="50" readonly></textarea
-        ><br />
-        <label>Réponse SDP :</label><br />
-        <textarea
-          id="answer-sender"
-          rows="5"
-          cols="50"
-          placeholder="Coller la réponse ici"
-        ></textarea
-        ><br />
-        <button id="btn-apply-answer" class="btn">Appliquer la réponse</button
-        ><br /><br />
-        <label>Choisir une photo à envoyer :</label><br />
-        <input type="file" id="webrtc-file-input" accept="image/*" />
-      </div>
-
-      <div
-        id="receiver-controls"
-        class="transfer-controls"
-        style="display: none"
-      >
-        <h3>Réception (PC)</h3>
-        <label>Offre SDP :</label><br />
-        <textarea
-          id="offer-receiver"
-          rows="5"
-          cols="50"
-          placeholder="Coller l’offre ici"
-        ></textarea
-        ><br />
-        <button id="btn-apply-offer" class="btn">Appliquer l’offre</button
-        ><br /><br />
-        <label>Réponse SDP générée :</label><br />
-        <textarea id="answer-pre" rows="5" cols="50" readonly></textarea>
-      </div>
-    </section>
     <main>
+      <section id="transfer-section" class="transfer-section">
+        <h2>Transfert d'image P2P</h2>
+        <button id="start-sender" class="btn">Mode Émission (téléphone)</button>
+        <button id="start-receiver" class="btn">Mode Réception (PC)</button>
+  
+        <div id="sender-controls" class="transfer-controls" style="display: none">
+          <h3>Émission (téléphone)</h3>
+          <label>Offre SDP :</label><br />
+          <textarea id="offer-sender" rows="5" cols="50" readonly></textarea
+          ><br />
+          <label>Réponse SDP :</label><br />
+          <textarea
+            id="answer-sender"
+            rows="5"
+            cols="50"
+            placeholder="Coller la réponse ici"
+          ></textarea
+          ><br />
+          <button id="btn-apply-answer" class="btn">Appliquer la réponse</button
+          ><br /><br />
+          <label>Choisir une photo à envoyer :</label><br />
+          <input type="file" id="webrtc-file-input" accept="image/*" />
+        </div>
+  
+        <div
+          id="receiver-controls"
+          class="transfer-controls"
+          style="display: none"
+        >
+          <h3>Réception (PC)</h3>
+          <label>Offre SDP :</label><br />
+          <textarea
+            id="offer-receiver"
+            rows="5"
+            cols="50"
+            placeholder="Coller l’offre ici"
+          ></textarea
+          ><br />
+          <button id="btn-apply-offer" class="btn">Appliquer l’offre</button
+          ><br /><br />
+          <label>Réponse SDP générée :</label><br />
+          <textarea id="answer-pre" rows="5" cols="50" readonly></textarea>
+        </div>
+      </section>
       <h1 id="editor-title">Éditeur d'images</h1>
       <div id="main-controls" class="editor-header">
         <div class="header-left">
