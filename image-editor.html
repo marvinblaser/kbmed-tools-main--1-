@@ -43,7 +43,7 @@
   <body>
     <div id="header-container"></div>
 
-    <!-- ========== Transfert P2P via WebTorrent + Firebase ========== -->
+    <!-- ==================== TRANSFERT P2P ==================== -->
     <section
       id="transfer-section"
       style="padding:1em; border:1px solid #ccc; margin:1em 0;"
@@ -63,18 +63,22 @@
       </div>
       <div id="download-ui" style="margin-top:1em;">
         <strong>Download (PC)</strong><br />
-        <label>Magnet URI reçu automatiquement :</label><br />
+        <label>Magnet URI reçu :</label><br />
         <textarea
           id="magnet-uri-input"
           rows="3"
           cols="60"
           readonly
           placeholder="Le magnet URI arrivé via Firebase"
-        ></textarea>
+        ></textarea
+        ><br />
+        <button id="btn-start-download" class="btn" disabled style="margin-top:0.5em;">
+          Charger l’image
+        </button>
       </div>
     </section>
 
-    <!-- ========== Éditeur d'Images ========== -->
+    <!-- ==================== ÉDITEUR D'IMAGES ==================== -->
     <main>
       <h1 id="editor-title">Éditeur d'images</h1>
       <div id="main-controls" class="editor-header">
@@ -98,8 +102,8 @@
               viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <path
-                d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0
-                   18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2
+                d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3
+                   m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2
                    2h3">
               </path>
             </svg>
@@ -113,8 +117,7 @@
               <path d="M20 21v-7a4 4 0 0 0-4-4H5" />
             </svg>
           </button>
-          <button id="text-tool-btn" class="btn icon-btn"
-            title="Ajouter du texte">
+          <button id="text-tool-btn" class="btn icon-btn" title="Ajouter du texte">
             <!-- icône texte -->
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
               viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"
@@ -141,8 +144,7 @@
             <!-- icône supprimer -->
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
               viewBox="0 0 24 24" fill="none" stroke="#ef4444"
-              stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path
                 d="M19 6v14a2 2 0 0 1-2

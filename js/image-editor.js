@@ -1,6 +1,6 @@
 // js/image-editor.js
 
-// Simu de base de données pour la médiathèque
+// --- Simu de base de données pour la médiathèque ---
 const db = {
   getFolders: () =>
     JSON.parse(localStorage.getItem("media_folders") || "[]"),
@@ -9,91 +9,131 @@ const db = {
 
 document.addEventListener("DOMContentLoaded", () => {
   // ===== P2P via WebTorrent + Firebase =====
-  const torrentClient = new WebTorrent();
-  // sessionId défini dans image-editor.html inline script
-  const sessionRef = firebase.database().ref("sessions/" + sessionId);
+  // Crée le client avec trackers WebSocket supplémentaires
+  const torrentClient = new WebTorrent({
+    tracker: {
+      announce: [
+        "wss://tracker.openwebtorrent.com",
+        "wss://tracker.fastcast.nz",
+        "wss://tracker.btorrent.xyz"
+      ]
+    }
+  });
+
+  // Récupère sessionId depuis image-editor.html
+  const sessionRef = firebase
+    .database()
+    .ref("sessions/" + sessionId);
 
   // Émetteur (téléphone)
-  const fileInputTorrent = document.getElementById("torrent-file-input");
-  const magnetUriTextarea = document.getElementById("magnet-uri");
+  const fileInputTorrent  = document.getElementById("torrent-file-input");
+  const magnetUriTextarea  = document.getElementById("magnet-uri");
   fileInputTorrent.addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    console.log("📤 seed file", file);
     torrentClient.seed(file, (torrent) => {
       const uri = torrent.magnetURI;
+      console.log("🎁 MagnetURI généré :", uri);
       magnetUriTextarea.value = uri;
-      // pousse dans Firebase pour le PC
       sessionRef.set({ magnet: uri });
     });
   });
 
   // Récepteur (PC)
-  const magnetUriInput = document.getElementById("magnet-uri-input");
+  const magnetUriInput    = document.getElementById("magnet-uri-input");
+  const btnStartDownload  = document.getElementById("btn-start-download");
+
   sessionRef.on("value", (snap) => {
     const data = snap.val();
+    console.log("🔥 Firebase session data:", data);
     if (data && data.magnet) {
       magnetUriInput.value = data.magnet;
-      startDownload(data.magnet);
+      btnStartDownload.disabled = false;
     }
   });
 
+  btnStartDownload.addEventListener("click", () => {
+    const uri = magnetUriInput.value.trim();
+    if (!uri) return;
+    startDownload(uri);
+  });
+
   function startDownload(uri) {
-    torrentClient.add(uri, (torrent) => {
-      torrent.files[0].getBlobURL((err, url) => {
-        if (err) return console.error(err);
+    console.log("▶️ startDownload()", uri);
+    const torrent = torrentClient.add(uri);
+
+    torrent.on("error", (err) => {
+      console.error("❌ Torrent error:", err);
+    });
+
+    torrent.on("download", (bytes) => {
+      console.log(`⬇️ downloaded ${bytes} bytes`);
+    });
+
+    torrent.on("done", () => {
+      console.log("✅ Torrent done, files:", torrent.files);
+      const file = torrent.files[0];
+      console.log("📄 file.getBlobURL…");
+      file.getBlobURL((err, url) => {
+        if (err) {
+          console.error("❌ getBlobURL error:", err);
+          return;
+        }
+        console.log("🔗 Blob URL:", url);
+        // Injecte dans l’éditeur
         window._imageEditor.imageDisplay.src = url;
         window._imageEditor.imageDisplay.onload = () => {
           window._imageEditor.reset(true);
+          console.log("🎨 Image chargée dans l'éditeur");
         };
       });
     });
   }
 
   // ===== ÉDITEUR D'IMAGES =====
-  const editorTitle = document.getElementById("editor-title");
-  const imageContainer = document.getElementById("image-container");
-  const imageDisplay = document.getElementById("image-display");
-  const imageLoader = document.getElementById("image-loader");
-  const deleteBtn = document.getElementById("delete-btn");
-  const resetBtn = document.getElementById("reset-btn");
-  const downloadBtn = document.getElementById("download-btn");
-  const downloadWrapper = document.getElementById("download-wrapper");
-  const cropToolBtn = document.getElementById("crop-tool-btn");
-  const undoBtn = document.getElementById("undo-btn");
-  const textToolBtn = document.getElementById("text-tool-btn");
-  const textPanel = document.getElementById("text-panel");
-  const closeTextPanelBtn = document.getElementById("close-text-panel-btn");
-  const textPanelInput = document.getElementById("text-panel-input");
-  const textPanelColor = document.getElementById("text-panel-color");
-  const addTextBtn = document.getElementById("add-text-btn");
-  const mainControls = document.getElementById("main-controls");
-  const cropActions = document.getElementById("crop-actions");
-  const confirmCropBtn = document.getElementById("confirm-crop-btn");
-  const cancelCropBtn = document.getElementById("cancel-crop-btn");
-  const openMediaLibraryBtn = document.getElementById(
-    "open-media-library-btn"
-  );
-  const mediaModal = document.getElementById("media-modal");
-  const closeModalBtn = document.getElementById("close-media-modal-btn");
-  const modalMediaGrid = document.getElementById("modal-media-grid");
+  const editorTitle            = document.getElementById("editor-title");
+  const imageContainer         = document.getElementById("image-container");
+  const imageDisplay           = document.getElementById("image-display");
+  const imageLoader            = document.getElementById("image-loader");
+  const deleteBtn              = document.getElementById("delete-btn");
+  const resetBtn               = document.getElementById("reset-btn");
+  const downloadBtn            = document.getElementById("download-btn");
+  const downloadWrapper        = document.getElementById("download-wrapper");
+  const cropToolBtn            = document.getElementById("crop-tool-btn");
+  const undoBtn                = document.getElementById("undo-btn");
+  const textToolBtn            = document.getElementById("text-tool-btn");
+  const textPanel              = document.getElementById("text-panel");
+  const closeTextPanelBtn      = document.getElementById("close-text-panel-btn");
+  const textPanelInput         = document.getElementById("text-panel-input");
+  const textPanelColor         = document.getElementById("text-panel-color");
+  const addTextBtn             = document.getElementById("add-text-btn");
+  const mainControls           = document.getElementById("main-controls");
+  const cropActions            = document.getElementById("crop-actions");
+  const confirmCropBtn         = document.getElementById("confirm-crop-btn");
+  const cancelCropBtn          = document.getElementById("cancel-crop-btn");
+  const openMediaLibraryBtn    = document.getElementById("open-media-library-btn");
+  const mediaModal             = document.getElementById("media-modal");
+  const closeModalBtn          = document.getElementById("close-media-modal-btn");
+  const modalMediaGrid         = document.getElementById("modal-media-grid");
 
   let selectedTextElement = null;
-  let isDragging = false;
+  let isDragging          = false;
   let offsetX, offsetY;
-  let cropper = null;
-  let history = [];
-  let currentModalFolderId = null;
+  let cropper             = null;
+  let history             = [];
+  let currentModalFolderId= null;
 
-  // Historique (undo)
+  // --- Historique (undo) ---
   function getCurrentState() {
     const texts = [];
     imageContainer.querySelectorAll(".text-overlay").forEach((el) => {
       texts.push({
         content: el.innerText,
-        left: el.style.left,
-        top: el.style.top,
+        left:    el.style.left,
+        top:     el.style.top,
         bgColor: el.style.backgroundColor,
-        color: el.style.color
+        color:   el.style.color
       });
     });
     return { imageSrc: imageDisplay.src, texts };
@@ -104,9 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function restoreState(state) {
     imageDisplay.src = state.imageSrc;
-    imageContainer
-      .querySelectorAll(".text-overlay")
-      .forEach((el) => el.remove());
+    imageContainer.querySelectorAll(".text-overlay").forEach((el) => el.remove());
     state.texts.forEach((t) => createTextElement(t));
   }
   undoBtn.addEventListener("click", () => {
@@ -117,11 +155,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Médiathèque
+  // --- Médiathèque ---
   function renderModalMedia() {
     modalMediaGrid.innerHTML = "";
     const allFolders = db.getFolders();
-    const allFiles = db.getFiles();
+    const allFiles   = db.getFiles();
     allFolders
       .filter((f) => f.parentId === currentModalFolderId)
       .forEach((folder) => {
@@ -129,19 +167,20 @@ document.addEventListener("DOMContentLoaded", () => {
         div.className = "media-item folder-item";
         div.dataset.folderId = folder.id;
         div.innerHTML = `
-          <div><svg class="folder-icon" xmlns="http://www.w3.org/2000/svg"
-            fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-            stroke="currentColor"><path stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5
-               9.75h15A2.25 2.25 0 0 1 21.75
-               12v.75m-8.69-6.44-2.12-2.12a1.5
-               1.5 0 0 0-1.061-.44H4.5A2.25
-               2.25 0 0 0 2.25 6v12a2.25
-               2.25 0 0 0 2.25 2.25h15A2.25
-               2.25 0 0 0 21.75 18V9a2.25
-               2.25 0 0 0-2.25-2.25h-5.379a1.5
-               1.5 0 0 1-1.06-.44Z"/></svg></div>
+          <div>
+            <svg class="folder-icon" xmlns="http://www.w3.org/2000/svg"
+              fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5
+                   9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44
+                   -2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25
+                   2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25
+                   2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25
+                   2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0
+                   1-1.06-.44Z" />
+            </svg>
+          </div>
           <span class="folder-name">${folder.name}</span>`;
         modalMediaGrid.appendChild(div);
       });
@@ -182,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Texte
+  // --- Texte ---
   function toggleTextPanel() {
     textPanel.classList.toggle("hidden");
   }
@@ -220,7 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
     deleteBtn.disabled = !el;
   }
 
-  // Chargement local
+  // --- Chargement local ---
   imageLoader.addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -268,7 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Reset
+  // --- Reset ---
   function reset(isNew = false) {
     imageContainer
       .querySelectorAll(".text-overlay")
@@ -280,7 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   resetBtn.addEventListener("click", () => reset(false));
 
-  // Télécharger
+  // --- Télécharger ---
   downloadBtn.addEventListener("click", () => {
     selectText(null);
     html2canvas(imageContainer).then((canvas) => {
@@ -301,16 +340,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Rogner
+  // --- Rogner ---
   function enterCropMode() {
     if (!imageDisplay.src || cropper) return;
     editorTitle.innerText = "Rogner l'image";
     mainControls.classList.add("hidden");
     downloadWrapper.classList.add("hidden");
     cropActions.classList.remove("hidden");
-    imageContainer
-      .querySelectorAll(".text-overlay")
-      .forEach((el) => (el.style.display = "none"));
+    imageContainer.querySelectorAll(".text-overlay").forEach((el) => {
+      el.style.display = "none";
+    });
     cropper = new Cropper(imageDisplay, { viewMode: 1, background: false });
   }
   function exitCropMode() {
@@ -321,26 +360,24 @@ document.addEventListener("DOMContentLoaded", () => {
     mainControls.classList.remove("hidden");
     downloadWrapper.classList.remove("hidden");
     cropActions.classList.add("hidden");
-    imageContainer
-      .querySelectorAll(".text-overlay")
-      .forEach((el) => (el.style.display = "block"));
+    imageContainer.querySelectorAll(".text-overlay").forEach((el) => {
+      el.style.display = "block";
+    });
   }
   cropToolBtn.addEventListener("click", enterCropMode);
   cancelCropBtn.addEventListener("click", exitCropMode);
   confirmCropBtn.addEventListener("click", () => {
     if (!cropper) return;
     const data = cropper.getData();
-    const cc = cropper.getCroppedCanvas();
+    const cc   = cropper.getCroppedCanvas();
     imageDisplay.src = cc.toDataURL("image/png");
     imageDisplay.onload = () => {
-      imageContainer
-        .querySelectorAll(".text-overlay")
-        .forEach((textDiv) => {
-          const lx = parseFloat(textDiv.style.left) - data.x;
-          const ty = parseFloat(textDiv.style.top) - data.y;
-          textDiv.style.left = `${lx}px`;
-          textDiv.style.top = `${ty}px`;
-        });
+      imageContainer.querySelectorAll(".text-overlay").forEach((textDiv) => {
+        const lx = parseFloat(textDiv.style.left) - data.x;
+        const ty = parseFloat(textDiv.style.top) - data.y;
+        textDiv.style.left = `${lx}px`;
+        textDiv.style.top  = `${ty}px`;
+      });
       exitCropMode();
       saveState();
     };
@@ -349,7 +386,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialisation
   saveState();
 
-  // Expose pour le P2P
+  // Expose pour P2P
   window._imageEditor = {
     imageDisplay,
     reset
