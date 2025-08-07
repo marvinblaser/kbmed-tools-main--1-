@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <title>Éditeur d'Images</title>
+
+    <!-- Styles -->
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/editor-styles.css" />
     <link rel="stylesheet" href="css/mediatheque-styles.css" />
@@ -11,65 +13,46 @@
       rel="stylesheet"
     />
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
-
+    <!-- Ably JS SDK -->
+    <script src="https://cdn.ably.io/lib/ably.min.js"></script>
     <!-- html2canvas & Cropper.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 
-    <!-- Initialise Firebase & génère sessionId -->
+    <!-- Initialise Ably + sessionId -->
     <script>
-      // Remplacez par votre config Firebase (Web App)
-      const firebaseConfig = {
-        apiKey: "AIzaSyA8GPO4P2TYUDmZOQqYcOT9mTQCw8rbhY0",
-        authDomain: "kbmed-tools.firebaseapp.com",
-        databaseURL: "https://kbmed-tools-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "kbmed-tools",
-        storageBucket: "kbmed-tools.firebasestorage.app"
-      };
-      firebase.initializeApp(firebaseConfig);
+      // ← REMPLACEZ PAR VOTRE CLÉ PUBLIQUE Ably
+      const ablyKey = "VTbxsw.K8jAEw:c-7otD5vuz5BW4vTYgL8y1mYMLhjWxGfBf6dMX0R3nk";
 
-      // Génère ou récupère sessionId dans l’URL
+      // sessionId unique dans l’URL
       let sessionId = new URLSearchParams(location.search).get("s");
       if (!sessionId) {
         sessionId = Math.random().toString(36).slice(2);
         history.replaceState(null, "", "?s=" + sessionId);
       }
+
+      // création du canal Ably partagé
+      const ably    = new Ably.Realtime(ablyKey);
+      const channel = ably.channels.get("img-" + sessionId);
+      window._ably  = { channel, sessionId };
     </script>
   </head>
+
   <body>
+    <!-- header/sidebar injecté par shared.js -->
     <div id="header-container"></div>
 
-    <!-- TRANSFERT via Firebase Storage -->
-    <section
-      style="padding:1em; border:1px solid #ccc; margin:1em 0;"
-    >
-      <h2>Transfert (téléphone → PC)</h2>
+    <!-- SECTION DE TRANSFERT via Ably -->
+    <section style="padding:1em; border:1px solid #ccc; margin:1em 0">
+      <h2>Transfert d'image (téléphone → PC)</h2>
       <div id="seed-ui" style="margin-bottom:1em;">
         <strong>Sur le téléphone :</strong><br />
         <input type="file" id="upload-file-input" accept="image/*" /><br />
-        <label>URL publique :</label><br />
-        <textarea
-          id="file-url"
-          rows="2"
-          cols="60"
-          readonly
-          placeholder="L'URL apparaîtra ici"
-        ></textarea>
+        <small>Sélectionnez une image pour l’envoyer instantanément.</small>
       </div>
       <div id="download-ui" style="margin-top:1em;">
         <strong>Sur le PC :</strong><br />
-        <label>URL reçue :</label><br />
-        <textarea
-          id="file-url-input"
-          rows="2"
-          cols="60"
-          readonly
-          placeholder="L'URL arrivera ici"
-        ></textarea>
+        <small>L'image arrive automatiquement dans l'éditeur ci-dessous.</small>
       </div>
     </section>
 
@@ -95,10 +78,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
               fill="none" viewBox="0 0 24 24" stroke="#000" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
-              <path
-                d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0
-                   18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2
-                   2h3" />
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3
+                       m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2
+                       2h3" />
             </svg>
           </button>
           <button id="undo-btn" class="btn icon-btn" title="Annuler" disabled>
@@ -123,22 +105,21 @@
               fill="none" viewBox="0 0 24 24" stroke="#000" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <path d="M2.5 2v6h6M21.5 22v-6h-6" />
-              <path
-                d="M22 11.5A10 10 0 0 0 3.2 7.2M2
-                   12.5a10 10 0 0 0 18.8 4.2" />
+              <path d="M22 11.5A10 10 0 0 0 3.2 7.2M2
+                       12.5a10 10 0 0 0 18.8 4.2" />
             </svg>
           </button>
           <button id="delete-btn" class="btn icon-btn danger-bg"
             title="Supprimer la sélection" disabled>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-              fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
+              fill="none" viewBox="0 0 24 24" stroke="#ef4444"
+              stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"></polyline>
-              <path
-                d="M19 6v14a2 2 0 0 1-2
-                   2H7a2 2 0 0 1-2-2V6m3
-                   0V4a2 2 0 0 1 2-2h4a2
-                   2 0 0 1 2 2v2" />
+              <path d="M19 6v14a2 2 0 0 1-2
+                       2H7a2 2 0 0 1-2-2V6m3
+                       0V4a2 2 0 0 1 2-2h4a2
+                       2 0 0 1 2 2v2" />
               <line x1="10" y1="11" x2="10" y2="17"></line>
               <line x1="14" y1="11" x2="14" y2="17"></line>
             </svg>
@@ -147,7 +128,7 @@
       </div>
 
       <div id="image-container">
-        <img id="image-display" src="" alt="" />
+        <img id="image-display" src="" alt="Votre image" />
       </div>
 
       <div class="actions-footer">
@@ -175,13 +156,9 @@
       <div class="panel-body">
         <div>
           <label for="text-panel-input">Texte à insérer :</label>
-          <input
-            type="text"
-            id="text-panel-input"
-            placeholder="Votre texte ici..."
-          />
+          <input type="text" id="text-panel-input" placeholder="Votre texte..." />
           <button id="add-text-btn" class="btn btn-primary">
-            Ajouter le texte
+            Ajouter
           </button>
         </div>
         <div>

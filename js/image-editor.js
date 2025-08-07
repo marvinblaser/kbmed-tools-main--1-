@@ -1,57 +1,44 @@
 // js/image-editor.js
 
-// Simulation de base de données pour la médiathèque
+// Simulation locale pour la médiathèque
 const db = {
   getFolders: () =>
     JSON.parse(localStorage.getItem("media_folders") || "[]"),
-  getFiles: () => JSON.parse(localStorage.getItem("media_files") || "[]")
+  getFiles: () =>
+    JSON.parse(localStorage.getItem("media_files") || "[]")
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  // ===== TRANSFERT via Firebase Storage + Realtime DB =====
-  const storage    = firebase.storage().ref();
-  const sessionRef = firebase.database().ref("sessions/" + sessionId);
-
-  // ÉMETTEUR (téléphone)
+  // ============================
+  // 1) TRANSFERT via Ably
+  // ============================
+  const { channel } = window._ably;
   const uploadInput = document.getElementById("upload-file-input");
-  const fileUrlText = document.getElementById("file-url");
+  const imgDisplay  = document.getElementById("image-display");
+
+  // Sur le téléphone : envoi de la DataURL
   uploadInput.addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
-
-    const path    = `uploads/${sessionId}/${file.name}`;
-    const fileRef = storage.child(path);
-
-    fileRef
-      .put(file)
-      .then(() => fileRef.getDownloadURL())
-      .then(url => {
-        console.log("🔗 URL de l'image :", url);
-        fileUrlText.value = url;
-        // Pousse l'URL dans Realtime DB pour le PC
-        sessionRef.set({ url });
-      })
-      .catch(err => console.error("Upload error:", err));
+    const reader = new FileReader();
+    reader.onload = () => {
+      channel.publish("newImage", reader.result);
+    };
+    reader.readAsDataURL(file);
   });
 
-  // RÉCEPTEUR (PC)
-  const fileUrlInput = document.getElementById("file-url-input");
-  sessionRef.on("value", snap => {
-    const data = snap.val();
-    if (data && data.url) {
-      console.log("📥 URL reçue :", data.url);
-      fileUrlInput.value = data.url;
-      // Injecte dans l'éditeur
-      const img = window._imageEditor.imageDisplay;
-      img.src = data.url;
-      img.onload = () => window._imageEditor.reset(true);
-    }
+  // Sur le PC : réception et injection dans l'éditeur
+  channel.subscribe("newImage", msg => {
+    console.log("📥 Image reçue via Ably");
+    imgDisplay.src = msg.data;
+    imgDisplay.onload = () => window._imageEditor.reset(true);
   });
 
-  // ===== ÉDITEUR D'IMAGES =====
+  // ============================
+  // 2) ÉDITEUR D'IMAGES
+  // ============================
   const editorTitle         = document.getElementById("editor-title");
   const imageContainer      = document.getElementById("image-container");
-  const imageDisplay        = document.getElementById("image-display");
   const imageLoader         = document.getElementById("image-loader");
   const deleteBtn           = document.getElementById("delete-btn");
   const resetBtn            = document.getElementById("reset-btn");
@@ -81,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let history             = [];
   let currentModalFolderId= null;
 
-  // ------- HISTORIQUE (UNDO) -------
+  // --- HISTORIQUE (UNDO) ---
   function getCurrentState() {
     const texts = [];
     imageContainer.querySelectorAll(".text-overlay").forEach(el => {
@@ -101,7 +88,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function restoreState(state) {
     imageDisplay.src = state.imageSrc;
-    imageContainer.querySelectorAll(".text-overlay").forEach(el => el.remove());
+    imageContainer
+      .querySelectorAll(".text-overlay")
+      .forEach(el => el.remove());
     state.texts.forEach(t => createTextElement(t));
   }
   undoBtn.addEventListener("click", () => {
@@ -112,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ------- MÉDIATHÈQUE -------
+  // --- MÉDIATHÈQUE ---
   function renderModalMedia() {
     modalMediaGrid.innerHTML = "";
     const allFolders = db.getFolders();
@@ -125,19 +114,19 @@ document.addEventListener("DOMContentLoaded", () => {
         div.dataset.folderId = folder.id;
         div.innerHTML = `
           <div>
-            <svg class="folder-icon" xmlns="http://www.w3.org/2000/svg"
-              fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-              stroke="currentColor">
+            <!-- icône dossier -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+              viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round"
-                d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5
-                   9.75h15A2.25 2.25 0 0 1 21.75
-                   12v.75m-8.69-6.44-2.12-2.12a1.5
-                   1.5 0 0 0-1.061-.44H4.5A2.25
-                   2.25 0 0 0 2.25 6v12a2.25
+                d="M2.25 12.75V12A2.25
+                   2.25 0 0 1 4.5 9.75h15A2.25
+                   2.25 0 0 1 21.75 12v.75m-8.69-6.44
+                   -2.12-2.12a1.5 1.5 0 0 0-1.061-.44
+                   H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25
                    2.25 0 0 0 2.25 2.25h15A2.25
                    2.25 0 0 0 21.75 18V9a2.25
-                   2.25 0 0 0-2.25-2.25h-5.379a1.5
-                   1.5 0 0 1-1.06-.44Z" />
+                   2.25 0 0 0-2.25-2.25h-5.379
+                   a1.5 1.5 0 0 1-1.06-.44Z" />
             </svg>
           </div>
           <span class="folder-name">${folder.name}</span>`;
@@ -180,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ------- TEXTE -------
+  // --- TEXTE ---
   function toggleTextPanel() {
     textPanel.classList.toggle("hidden");
   }
@@ -216,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
     deleteBtn.disabled = !el;
   }
 
-  // --- Chargement local ---
+  // --- Import local ---
   imageLoader.addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -242,7 +231,6 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleTextPanel();
     saveState();
   });
-
   document.addEventListener("mousemove", e => {
     if (isDragging && selectedTextElement) {
       const pr = imageContainer.getBoundingClientRect();
@@ -250,7 +238,6 @@ document.addEventListener("DOMContentLoaded", () => {
       selectedTextElement.style.top  = `${e.clientY - pr.top  - offsetY}px`;
     }
   });
-
   document.addEventListener("mouseup", () => {
     if (isDragging) {
       isDragging = false;
@@ -258,7 +245,6 @@ document.addEventListener("DOMContentLoaded", () => {
       saveState();
     }
   });
-
   deleteBtn.addEventListener("click", () => {
     if (selectedTextElement) {
       selectedTextElement.remove();
@@ -267,7 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ------- RESET -------
+  // --- Reset ---
   function reset(isNew = false) {
     imageContainer.querySelectorAll(".text-overlay").forEach(el => el.remove());
     selectText(null);
@@ -277,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   resetBtn.addEventListener("click", () => reset(false));
 
-  // ------- TÉLÉCHARGER -------
+  // --- Télécharger ---
   downloadBtn.addEventListener("click", () => {
     selectText(null);
     html2canvas(imageContainer).then(canvas => {
@@ -298,7 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ------- ROGNAGE -------
+  // --- Rogner ---
   function enterCropMode() {
     if (!imageDisplay.src || cropper) return;
     editorTitle.innerText = "Rogner l'image";
@@ -337,12 +323,12 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   });
 
-  // Expose pour l'intégration transfert
+  // expose pour integration transfert
   window._imageEditor = {
     imageDisplay,
     reset
   };
 
-  // Init historique
+  // init historique
   saveState();
 });
