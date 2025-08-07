@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Éditeur d'Images</title>
-
-  <!-- Styles -->
+  <!-- Vos CSS -->
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/editor-styles.css" />
   <link rel="stylesheet" href="css/mediatheque-styles.css" />
@@ -12,9 +11,8 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"
     rel="stylesheet"
   />
-
-  <!-- Ably (versionnée) -->
-  <script src="https://cdn.ably.io/lib/ably.realtime-1.2.25.min.js"></script>
+  <!-- Gun.js P2P -->
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <!-- html2canvas & Cropper.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -22,17 +20,17 @@
 <body>
   <div id="header-container"></div>
 
-  <!-- TRANSFERT via Ably -->
+  <!-- TRANSFERT via Gun.js -->
   <section style="padding:1em; border:1px solid #ccc; margin:1em 0;">
     <h2>Transfert d'image (téléphone → PC)</h2>
     <div style="margin-bottom:1em;">
-      <strong>Sur le téléphone :</strong><br />
-      <input type="file" id="upload-file-input" accept="image/*" /><br />
-      <small>Sélectionnez une image pour l’envoyer instantanément.</small>
+      <strong>Sur le téléphone :</strong><br>
+      <input type="file" id="transfer-input" accept="image/*"><br>
+      <small>Sélectionnez une image pour l’envoyer.</small>
     </div>
     <div>
-      <strong>Sur le PC :</strong><br />
-      <small>L'image arrive automatiquement dans l'éditeur ci-dessous.</small>
+      <strong>Sur le PC :</strong><br>
+      <small>L'image apparaît automatiquement dans l'éditeur.</small>
     </div>
   </section>
 
@@ -42,16 +40,8 @@
     <div id="main-controls" class="editor-header">
       <div class="header-left">
         <label for="image-loader" class="btn">Importer un fichier</label>
-        <input
-          type="file"
-          id="image-loader"
-          class="hidden"
-          accept="image/*"
-          capture="environment"
-        />
-        <button id="open-media-library-btn" class="btn">
-          Choisir depuis la médiathèque
-        </button>
+        <input type="file" id="image-loader" class="hidden" accept="image/*" capture="environment">
+        <button id="open-media-library-btn" class="btn">Choisir depuis la médiathèque</button>
       </div>
       <div class="header-right">
         <button id="crop-tool-btn" class="btn icon-btn" title="Rogner">
@@ -110,56 +100,24 @@
         </button>
       </div>
     </div>
-
     <div id="image-container">
-      <img id="image-display" src="" alt="Votre image" />
+      <img id="image-display" src="" alt="Votre image">
     </div>
-
     <div class="actions-footer">
       <div id="crop-actions" class="hidden">
         <button id="confirm-crop-btn" class="btn btn-success">Confirmer</button>
         <button id="cancel-crop-btn" class="btn btn-danger">Annuler</button>
       </div>
       <div id="download-wrapper">
-        <button id="download-btn" class="btn btn-primary">
-          Télécharger l'image
-        </button>
+        <button id="download-btn" class="btn btn-primary">Télécharger l'image</button>
       </div>
     </div>
   </main>
 
-  <div id="text-panel" class="hidden">
-    <div class="panel-header">
-      <h3>TEXTE</h3>
-      <button id="close-text-panel-btn" class="btn icon-btn">&times;</button>
-    </div>
-    <div class="panel-body">
-      <div>
-        <label for="text-panel-input">Texte à insérer :</label>
-        <input type="text" id="text-panel-input" placeholder="Votre texte..." />
-        <button id="add-text-btn" class="btn btn-primary">Ajouter</button>
-      </div>
-      <div>
-        <label>Couleur du fond :</label>
-        <div class="color-picker-wrapper">
-          <input type="color" id="text-panel-color" value="#FFFFFF" />
-          <span>Cliquez pour changer</span>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div id="text-panel" class="hidden">…</div>
+  <div id="media-modal" class="modal-overlay hidden">…</div>
 
-  <div id="media-modal" class="modal-overlay hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Choisir une image</h2>
-        <button id="close-media-modal-btn" class="btn icon-btn">&times;</button>
-      </div>
-      <div id="modal-media-grid"></div>
-    </div>
-  </div>
-
-  <!-- Scripts -->
+  <!-- Vos scripts -->
   <script src="js/shared.js"></script>
   <script src="js/image-editor.js"></script>
 </body>
