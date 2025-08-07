@@ -1,32 +1,30 @@
 // js/image-editor.js
 
-// Simulation locale pour médithèque
+// Simulation pour la médiathèque
 const db = {
-  getFolders: () =>
-    JSON.parse(localStorage.getItem("media_folders") || "[]"),
-  getFiles: () =>
-    JSON.parse(localStorage.getItem("media_files") || "[]")
+  getFolders: () => JSON.parse(localStorage.getItem("media_folders") || "[]"),
+  getFiles:   () => JSON.parse(localStorage.getItem("media_files")   || "[]")
 };
 
 document.addEventListener("DOMContentLoaded", () => {
   //
   // 1) TRANSFERT via Ably
   //
-  // Récupère ou génère le sessionId passé en query param ?s=
+  // Récupère ou génère un sessionId depuis ?s=
   let sessionId = new URLSearchParams(location.search).get("s");
   if (!sessionId) {
     sessionId = Math.random().toString(36).slice(2);
     history.replaceState(null, "", "?s=" + sessionId);
   }
 
-  // Initialise Ably (chargé par HTML via CDN versionné)
+  // Initialise Ably (doit être après le CDN versionné dans HTML)
   const ably    = new Ably.Realtime("VTbxsw.K8jAEw:c-7otD5vuz5BW4vTYgL8y1mYMLhjWxGfBf6dMX0R3nk");
   const channel = ably.channels.get("img-" + sessionId);
 
   const uploadInput  = document.getElementById("upload-file-input");
   const imageDisplay = document.getElementById("image-display");
 
-  // Sur le mobile : envoi de la photo en DataURL
+  // Téléphone : envoi de la DataURL
   uploadInput.addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -35,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsDataURL(file);
   });
 
-  // Sur le PC : réception et injection dans l'éditeur
+  // PC : réception et injection
   channel.subscribe("newImage", msg => {
     console.log("📥 Image reçue via Ably");
     imageDisplay.src = msg.data;
@@ -69,11 +67,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeModalBtn       = document.getElementById("close-media-modal-btn");
   const modalMediaGrid      = document.getElementById("modal-media-grid");
 
-  let selectedTextElement = null;
-  let isDragging          = false;
-  let offsetX, offsetY;
-  let cropper             = null;
-  let history             = [];
+  let selectedTextElement = null,
+      isDragging          = false,
+      offsetX, offsetY,
+      cropper             = null,
+      history             = [];
 
   // --- HISTORIQUE (UNDO) ---
   function getCurrentState() {
@@ -109,37 +107,35 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- MÉDIATHÈQUE ---
   function renderModalMedia() {
     modalMediaGrid.innerHTML = "";
-    const folders = db.getFolders();
-    const files   = db.getFiles();
-    folders.filter(f => f.parentId === currentModalFolderId)
-      .forEach(folder => {
-        const div = document.createElement("div");
-        div.className = "media-item folder-item";
-        div.dataset.folderId = folder.id;
-        div.innerHTML = `
-          <svg class="folder-icon" xmlns="http://www.w3.org/2000/svg"
-               fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-               stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5
-                     9.75h15A2.25 2.25 0 0 1 21.75 12v.75
-                     m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44
-                     H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25
-                     0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75
-                     18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5
-                     1.5 0 0 1-1.06-.44Z" />
-          </svg>
-          <span class="folder-name">${folder.name}</span>`;
-        modalMediaGrid.appendChild(div);
-      });
-    files.filter(f => f.folderId === currentModalFolderId)
-      .forEach(file => {
-        const div = document.createElement("div");
-        div.className = "media-item media-thumbnail";
-        div.dataset.fileId = file.id;
-        div.innerHTML = `<img src="${file.dataUrl}" alt="${file.name}">`;
-        modalMediaGrid.appendChild(div);
-      });
+    const folders = db.getFolders(),
+          files   = db.getFiles();
+    folders.filter(f => f.parentId === currentModalFolderId).forEach(folder => {
+      const div = document.createElement("div");
+      div.className = "media-item folder-item";
+      div.dataset.folderId = folder.id;
+      div.innerHTML = `
+        <svg class="folder-icon" xmlns="http://www.w3.org/2000/svg"
+             fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+             stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25
+                   2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5
+                   1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0
+                   2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25
+                   2.25 0 0 0 21.75 18V9a2.25 2.25 0 0
+                   0-2.25-2.25h-5.379a1.5 1.5 0 0
+                   1-1.06-.44Z" />
+        </svg>
+        <span class="folder-name">${folder.name}</span>`;
+      modalMediaGrid.appendChild(div);
+    });
+    files.filter(f => f.folderId === currentModalFolderId).forEach(file => {
+      const div = document.createElement("div");
+      div.className = "media-item media-thumbnail";
+      div.dataset.fileId = file.id;
+      div.innerHTML = `<img src="${file.dataUrl}" alt="${file.name}">`;
+      modalMediaGrid.appendChild(div);
+    });
   }
   openMediaLibraryBtn.addEventListener("click", () => {
     currentModalFolderId = null;
@@ -148,18 +144,18 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   closeModalBtn.addEventListener("click", () => mediaModal.classList.add("hidden"));
   modalMediaGrid.addEventListener("click", e => {
-    const folderEl = e.target.closest(".folder-item");
-    if (folderEl) {
-      currentModalFolderId = Number(folderEl.dataset.folderId);
+    const fld = e.target.closest(".folder-item");
+    if (fld) {
+      currentModalFolderId = +fld.dataset.folderId;
       renderModalMedia();
       return;
     }
     const thumb = e.target.closest(".media-thumbnail");
     if (thumb) {
-      const fid = Number(thumb.dataset.fileId);
-      const selected = db.getFiles().find(f => f.id === fid);
-      if (selected) {
-        imageDisplay.src = selected.dataUrl;
+      const id = +thumb.dataset.fileId;
+      const f  = db.getFiles().find(x => x.id === id);
+      if (f) {
+        imageDisplay.src = f.dataUrl;
         imageDisplay.onload = () => reset(true);
         mediaModal.classList.add("hidden");
       }
@@ -167,9 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // --- TEXTE ---
-  function toggleTextPanel() {
-    textPanel.classList.toggle("hidden");
-  }
+  function toggleTextPanel() { textPanel.classList.toggle("hidden"); }
   textToolBtn.addEventListener("click", toggleTextPanel);
   closeTextPanelBtn.addEventListener("click", toggleTextPanel);
   function createTextElement(data) {
@@ -202,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
     deleteBtn.disabled = !el;
   }
 
-  // --- IMPORT LOCALE ---
+  // --- IMPORT LOCAL ---
   imageLoader.addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -267,11 +261,10 @@ document.addEventListener("DOMContentLoaded", () => {
     html2canvas(imageContainer).then(canvas => {
       const cR = imageContainer.getBoundingClientRect();
       const iR = imageDisplay.getBoundingClientRect();
-      const x = iR.left - cR.left;
-      const y = iR.top  - cR.top;
-      const w = iR.width, h = iR.height;
+      const x  = iR.left - cR.left, y = iR.top - cR.top;
+      const w  = iR.width, h = iR.height;
       const c2 = document.createElement("canvas");
-      c2.width  = w; c2.height = h;
+      c2.width = w; c2.height = h;
       c2.getContext("2d").drawImage(canvas, x, y, w, h, 0, 0, w, h);
       const link = document.createElement("a");
       link.download = "image-modifiee.png";
@@ -287,18 +280,19 @@ document.addEventListener("DOMContentLoaded", () => {
     mainControls.classList.add("hidden");
     downloadWrapper.classList.add("hidden");
     cropActions.classList.remove("hidden");
-    imageContainer.querySelectorAll(".text-overlay").forEach(el => (el.style.display = "none"));
-    cropper = new Cropper(imageDisplay, { viewMode: 1, background: false });
+    imageContainer.querySelectorAll(".text-overlay")
+      .forEach(el => el.style.display = "none");
+    cropper = new Cropper(imageDisplay, { viewMode:1, background:false });
   }
   function exitCropMode() {
     if (!cropper) return;
     editorTitle.innerText = "Éditeur d'images";
-    cropper.destroy();
-    cropper = null;
+    cropper.destroy(); cropper = null;
     mainControls.classList.remove("hidden");
     downloadWrapper.classList.remove("hidden");
     cropActions.classList.add("hidden");
-    imageContainer.querySelectorAll(".text-overlay").forEach(el => (el.style.display = "block"));
+    imageContainer.querySelectorAll(".text-overlay")
+      .forEach(el => el.style.display = "block");
   }
   cropToolBtn.addEventListener("click", enterCropMode);
   cancelCropBtn.addEventListener("click", exitCropMode);
@@ -308,20 +302,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const cc   = cropper.getCroppedCanvas();
     imageDisplay.src = cc.toDataURL("image/png");
     imageDisplay.onload = () => {
-      imageContainer.querySelectorAll(".text-overlay").forEach(textDiv => {
-        const lx = parseFloat(textDiv.style.left) - data.x;
-        const ty = parseFloat(textDiv.style.top)  - data.y;
-        textDiv.style.left = `${lx}px`;
-        textDiv.style.top  = `${ty}px`;
+      imageContainer.querySelectorAll(".text-overlay").forEach(td => {
+        const lx = parseFloat(td.style.left) - data.x;
+        const ty = parseFloat(td.style.top)  - data.y;
+        td.style.left = `${lx}px`;
+        td.style.top  = `${ty}px`;
       });
       exitCropMode();
       saveState();
     };
   });
 
-  // exposed API
+  // Expose pour le reset automatique
   window._imageEditor = { imageDisplay, reset };
 
-  // init
+  // Première sauvegarde
   saveState();
 });
