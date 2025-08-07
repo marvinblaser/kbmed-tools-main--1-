@@ -4,18 +4,16 @@
     <meta charset="UTF-8" />
     <title>Éditeur d'Images</title>
 
-    <!-- Vos CSS -->
+    <!-- CSS -->
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/editor-styles.css" />
     <link rel="stylesheet" href="css/mediatheque-styles.css" />
-
-    <!-- Cropper CSS -->
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"
       rel="stylesheet"
     />
 
-    <!-- Gun.js P2P (relay public, pas de config) -->
+    <!-- Gun.js P2P (relay public) -->
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <!-- html2canvas & Cropper.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -25,16 +23,16 @@
     <div id="header-container"></div>
 
     <!-- TRANSFERT via Gun.js -->
-    <section style="padding:1em;border:1px solid #ccc;margin:1em 0;">
+    <section style="padding:1em; border:1px solid #ccc; margin:1em 0;">
       <h2>Transfert d'image (téléphone → PC)</h2>
       <div style="margin-bottom:1em;">
-        <strong>Sur le téléphone :</strong><br>
-        <input type="file" id="transfer-input" accept="image/*"><br>
+        <strong>Sur le téléphone :</strong><br />
+        <input type="file" id="transfer-input" accept="image/*" /><br />
         <small>Sélectionnez une image pour l’envoyer.</small>
       </div>
       <div>
-        <strong>Sur le PC :</strong><br>
-        <small>L'image apparaît automatiquement dans l'éditeur.</small>
+        <strong>Sur le PC :</strong><br />
+        <small>L'image arrive automatiquement dans l'éditeur.</small>
       </div>
     </section>
 
@@ -86,6 +84,20 @@
           </button>
         </div>
       </div>
+
+      <div id="image-container">
+        <img id="image-display" src="" alt="Votre image" />
+      </div>
+
+      <div class="actions-footer">
+        <div id="crop-actions" class="hidden">
+          <button id="confirm-crop-btn" class="btn btn-success">Confirmer</button>
+          <button id="cancel-crop-btn" class="btn btn-danger">Annuler</button>
+        </div>
+        <div id="download-wrapper">
+          <button id="download-btn" class="btn btn-primary">Télécharger l'image</button>
+        </div>
+      </div>
     </main>
 
     <div id="text-panel" class="hidden">
@@ -96,12 +108,8 @@
       <div class="panel-body">
         <div>
           <label for="text-panel-input">Texte à insérer :</label>
-          <input
-            type="text"
-            id="text-panel-input"
-            placeholder="Votre texte ici..."
-          />
-          <button id="add-text-btn" class="btn btn-primary">Ajouter le texte</button>
+          <input type="text" id="text-panel-input" placeholder="Votre texte..." />
+          <button id="add-text-btn" class="btn btn-primary">Ajouter</button>
         </div>
         <div>
           <label>Couleur du fond :</label>
@@ -123,7 +131,7 @@
       </div>
     </div>
 
-    <!-- Scripts partagés et ton JS -->
+    <!-- Scripts -->
     <script src="js/shared.js"></script>
     <script src="js/image-editor.js"></script>
   </body>

@@ -1,6 +1,6 @@
 // js/image-editor.js
 
-// Simulation locale pour la médiathèque
+// Simu pour médiathèque
 const db = {
   getFolders: () => JSON.parse(localStorage.getItem("media_folders") || "[]"),
   getFiles:   () => JSON.parse(localStorage.getItem("media_files")   || "[]")
@@ -13,8 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let sessionId = new URLSearchParams(location.search).get("s");
   if (!sessionId) {
     sessionId = Math.random().toString(36).slice(2);
-    history.replaceState(null, "", "?s=" + sessionId);
+    window.history.replaceState(null, "", "?s=" + sessionId);
   }
+
   const gun     = Gun({ peers: ['https://relay.gun.eco/gun'] });
   const session = gun.get('img-session-' + sessionId);
 
@@ -30,9 +31,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   session.on(data => {
-    if (!data || !data.img) return;
-    imageDisplay.src = data.img;
-    imageDisplay.onload = () => window._imageEditor.reset(true);
+    if (data && data.img) {
+      imageDisplay.src = data.img;
+      imageDisplay.onload = () => window._imageEditor.reset(true);
+    }
   });
 
   //
@@ -66,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
       isDragging          = false,
       offsetX, offsetY,
       cropper             = null,
-      history             = [],
+      undoHistory         = [],        // RENOMMÉ
       currentModalFolderId= null;
 
   // --- HISTORIQUE (UNDO) ---
@@ -84,8 +86,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return { imageSrc: imageDisplay.src, texts };
   }
   function saveState() {
-    history.push(getCurrentState());
-    undoBtn.disabled = history.length <= 1;
+    undoHistory.push(getCurrentState());
+    undoBtn.disabled = undoHistory.length <= 1;
   }
   function restoreState(state) {
     imageDisplay.src = state.imageSrc;
@@ -93,10 +95,10 @@ document.addEventListener("DOMContentLoaded", () => {
     state.texts.forEach(t => createTextElement(t));
   }
   undoBtn.addEventListener("click", () => {
-    if (history.length > 1) {
-      history.pop();
-      restoreState(history[history.length - 1]);
-      undoBtn.disabled = history.length <= 1;
+    if (undoHistory.length > 1) {
+      undoHistory.pop();
+      restoreState(undoHistory[undoHistory.length - 1]);
+      undoBtn.disabled = undoHistory.length <= 1;
     }
   });
 
@@ -108,20 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const div = document.createElement("div");
       div.className = "media-item folder-item";
       div.dataset.folderId = folder.id;
-      div.innerHTML = `
-        <svg class="folder-icon" xmlns="http://www.w3.org/2000/svg"
-             fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-             stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round"
-                d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25
-                   2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5
-                   1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0
-                   2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25
-                   2.25 0 0 0 21.75 18V9a2.25 2.25 0 0
-                   0-2.25-2.25h-5.379a1.5 1.5 0 0
-                   1-1.06-.44Z" />
-        </svg>
-        <span class="folder-name">${folder.name}</span>`;
+      div.innerHTML = `<svg …></svg><span>${folder.name}</span>`;
       modalMediaGrid.appendChild(div);
     });
     files.filter(f => f.folderId === currentModalFolderId).forEach(file => {
@@ -165,10 +154,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const div = document.createElement("div");
     div.className = "text-overlay";
     div.innerText = data.content;
-    div.style.left = data.left;
-    div.style.top  = data.top;
+    div.style.left           = data.left;
+    div.style.top            = data.top;
     div.style.backgroundColor = data.bgColor;
-    div.style.color = data.color;
+    div.style.color           = data.color;
     div.addEventListener("mousedown", ev => {
       ev.stopPropagation();
       selectText(div);
@@ -191,7 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
     deleteBtn.disabled = !el;
   }
 
-  // --- IMPORT LOCAL ---
+  // --- Import local ---
   imageLoader.addEventListener("change", e => {
     const f = e.target.files[0];
     if (!f) return;
@@ -244,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
     imageContainer.querySelectorAll(".text-overlay").forEach(el => el.remove());
     selectText(null);
     if (!isNew) imageDisplay.src = "";
-    history = [];
+    undoHistory = [];
     saveState();
   }
   resetBtn.addEventListener("click", () => reset(false));
@@ -258,7 +247,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const x  = iR.left - cR.left, y = iR.top - cR.top;
       const w  = iR.width, h = iR.height;
       const c2 = document.createElement("canvas");
-      c2.width  = w; c2.height = h;
+      c2.width = w; c2.height = h;
       c2.getContext("2d").drawImage(canvas, x, y, w, h, 0, 0, w, h);
       const link = document.createElement("a");
       link.download = "image-modifiee.png";
@@ -281,8 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function exitCropMode() {
     if (!cropper) return;
     editorTitle.innerText = "Éditeur d'images";
-    cropper.destroy();
-    cropper = null;
+    cropper.destroy(); cropper = null;
     mainControls.classList.remove("hidden");
     downloadWrapper.classList.remove("hidden");
     cropActions.classList.add("hidden");
@@ -308,9 +296,9 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   });
 
-  // Expose API pour reset automatique
+  // Expose pour reset
   window._imageEditor = { imageDisplay, reset };
 
-  // Init history
+  // Init undo history
   saveState();
 });
