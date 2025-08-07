@@ -1,6 +1,6 @@
 // js/image-editor.js
 
-// Simulation locale pour la médiathèque
+// Simulation locale de la médiathèque
 const db = {
   getFolders: () =>
     JSON.parse(localStorage.getItem("media_folders") || "[]"),
@@ -9,21 +9,12 @@ const db = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  // === 1) TRANSFERT via Ably ===
-  // Génération/récupération de sessionId
-  let sessionId = new URLSearchParams(location.search).get("s");
-  if (!sessionId) {
-    sessionId = Math.random().toString(36).slice(2);
-    history.replaceState(null, "", "?s=" + sessionId);
-  }
-  // Initialisation Ably
-  const ably = new Ably.Realtime("VOTRE_ABLY_API_KEY");
-  const channel = ably.channels.get("img-" + sessionId);
-
+  // ===== 1) TRANSFERT via Ably =====
+  const { channel } = window._ably;
   const uploadInput  = document.getElementById("upload-file-input");
   const imageDisplay = document.getElementById("image-display");
 
-  // Téléphone : envoi
+  // Téléphone : envoi de la DataURL
   uploadInput.addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -32,14 +23,14 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsDataURL(file);
   });
 
-  // PC : réception
+  // PC : réception et injection
   channel.subscribe("newImage", msg => {
     console.log("📥 Image reçue via Ably");
     imageDisplay.src = msg.data;
     imageDisplay.onload = () => window._imageEditor.reset(true);
   });
 
-  // === 2) ÉDITEUR D'IMAGES ===
+  // ===== 2) ÉDITEUR D'IMAGES =====
   const editorTitle         = document.getElementById("editor-title");
   const imageContainer      = document.getElementById("image-container");
   const imageLoader         = document.getElementById("image-loader");
@@ -64,12 +55,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeModalBtn       = document.getElementById("close-media-modal-btn");
   const modalMediaGrid      = document.getElementById("modal-media-grid");
 
-  let selectedTextElement = null,
-      isDragging          = false,
-      offsetX, offsetY,
-      cropper             = null,
-      history             = [],
-      currentModalFolderId= null;
+  let selectedTextElement    = null;
+  let isDragging             = false;
+  let offsetX, offsetY;
+  let cropper                = null;
+  let undoHistory            = [];
+  let currentModalFolderId   = null;
 
   // --- HISTORIQUE (UNDO) ---
   function getCurrentState() {
@@ -86,8 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return { imageSrc: imageDisplay.src, texts };
   }
   function saveState() {
-    history.push(getCurrentState());
-    undoBtn.disabled = history.length <= 1;
+    undoHistory.push(getCurrentState());
+    undoBtn.disabled = undoHistory.length <= 1;
   }
   function restoreState(state) {
     imageDisplay.src = state.imageSrc;
@@ -95,10 +86,10 @@ document.addEventListener("DOMContentLoaded", () => {
     state.texts.forEach(t => createTextElement(t));
   }
   undoBtn.addEventListener("click", () => {
-    if (history.length > 1) {
-      history.pop();
-      restoreState(history[history.length - 1]);
-      undoBtn.disabled = history.length <= 1;
+    if (undoHistory.length > 1) {
+      undoHistory.pop();
+      restoreState(undoHistory[undoHistory.length - 1]);
+      undoBtn.disabled = undoHistory.length <= 1;
     }
   });
 
@@ -113,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
         div.className = "media-item folder-item";
         div.dataset.folderId = folder.id;
         div.innerHTML = `
-          <svg …icone…></svg>
+          <svg …icone dossier…></svg>
           <span class="folder-name">${folder.name}</span>`;
         modalMediaGrid.appendChild(div);
       });
@@ -141,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const thumb = e.target.closest(".media-thumbnail");
     if (thumb) {
-      const id = +thumb.dataset.fileId;
+      const id   = +thumb.dataset.fileId;
       const file = db.getFiles().find(x => x.id === id);
       if (file) {
         imageDisplay.src = file.dataUrl;
@@ -171,7 +162,10 @@ document.addEventListener("DOMContentLoaded", () => {
       offsetY = ev.clientY - div.getBoundingClientRect().top;
       div.style.cursor = "grabbing";
     });
-    div.addEventListener("click", ev => { ev.stopPropagation(); selectText(div); });
+    div.addEventListener("click", ev => {
+      ev.stopPropagation();
+      selectText(div);
+    });
     imageContainer.appendChild(div);
     return div;
   }
@@ -182,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
     deleteBtn.disabled = !el;
   }
 
-  // --- IMPORT LOCAL ---
+  // --- Import local ---
   imageLoader.addEventListener("change", e => {
     const f = e.target.files[0];
     if (!f) return;
@@ -232,11 +226,11 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // --- RESET ---
-  function reset(isNew=false) {
+  function reset(isNew = false) {
     imageContainer.querySelectorAll(".text-overlay").forEach(el => el.remove());
     selectText(null);
     if (!isNew) imageDisplay.src = "";
-    history = [];
+    undoHistory = [];
     saveState();
   }
   resetBtn.addEventListener("click", () => reset(false));
@@ -250,7 +244,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const x = iR.left - cR.left, y = iR.top - cR.top;
       const w = iR.width, h = iR.height;
       const c2 = document.createElement("canvas");
-      c2.width = w; c2.height = h;
+      c2.width = w;
+      c2.height= h;
       c2.getContext("2d").drawImage(canvas, x, y, w, h, 0, 0, w, h);
       const link = document.createElement("a");
       link.download = "image-modifiee.png";
@@ -267,25 +262,26 @@ document.addEventListener("DOMContentLoaded", () => {
     downloadWrapper.classList.add("hidden");
     cropActions.classList.remove("hidden");
     imageContainer.querySelectorAll(".text-overlay")
-      .forEach(el => el.style.display="none");
+      .forEach(el => el.style.display = "none");
     cropper = new Cropper(imageDisplay, { viewMode:1, background:false });
   }
   function exitCropMode() {
     if (!cropper) return;
     editorTitle.innerText = "Éditeur d'images";
-    cropper.destroy(); cropper=null;
+    cropper.destroy();
+    cropper=null;
     mainControls.classList.remove("hidden");
     downloadWrapper.classList.remove("hidden");
     cropActions.classList.add("hidden");
     imageContainer.querySelectorAll(".text-overlay")
-      .forEach(el => el.style.display="block");
+      .forEach(el => el.style.display = "block");
   }
   cropToolBtn.addEventListener("click", enterCropMode);
   cancelCropBtn.addEventListener("click", exitCropMode);
   confirmCropBtn.addEventListener("click", () => {
     if (!cropper) return;
     const data = cropper.getData();
-    const cc = cropper.getCroppedCanvas();
+    const cc   = cropper.getCroppedCanvas();
     imageDisplay.src = cc.toDataURL("image/png");
     imageDisplay.onload = () => {
       imageContainer.querySelectorAll(".text-overlay").forEach(td => {
@@ -299,9 +295,9 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   });
 
-  // Expose pour l’éditeur
+  // expose pour l’éditeur
   window._imageEditor = { imageDisplay, reset };
 
-  // Init historique
+  // init historique
   saveState();
 });
