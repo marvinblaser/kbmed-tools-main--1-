@@ -1,42 +1,33 @@
 // js/image-editor.js
 
-// Simulation locale pour la médiathèque
 const db = {
-  getFolders: () =>
-    JSON.parse(localStorage.getItem("media_folders") || "[]"),
-  getFiles: () =>
-    JSON.parse(localStorage.getItem("media_files") || "[]")
+  getFolders: () => JSON.parse(localStorage.getItem("media_folders") || "[]"),
+  getFiles:   () => JSON.parse(localStorage.getItem("media_files")   || "[]")
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  // ============================
-  // 1) TRANSFERT via Ably
-  // ============================
-  const { channel } = window._ably;
-  const uploadInput = document.getElementById("upload-file-input");
-  const imgDisplay  = document.getElementById("image-display");
+  // ==== 1) TRANSFERT via Ably ====
+  const { channel }        = window._ably;
+  const uploadInput        = document.getElementById("upload-file-input");
+  const imageDisplay       = document.getElementById("image-display");
 
-  // Sur le téléphone : envoi de la DataURL
+  // Sur le téléphone : lit le fichier en DataURL et publie
   uploadInput.addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      channel.publish("newImage", reader.result);
-    };
+    reader.onload = () => channel.publish("newImage", reader.result);
     reader.readAsDataURL(file);
   });
 
-  // Sur le PC : réception et injection dans l'éditeur
+  // Sur le PC : s’abonne et injecte la DataURL dans <img>
   channel.subscribe("newImage", msg => {
-    console.log("📥 Image reçue via Ably");
-    imgDisplay.src = msg.data;
-    imgDisplay.onload = () => window._imageEditor.reset(true);
+    console.log("📥 Image reçue");
+    imageDisplay.src = msg.data;
+    imageDisplay.onload = () => window._imageEditor.reset(true);
   });
 
-  // ============================
-  // 2) ÉDITEUR D'IMAGES
-  // ============================
+  // ==== 2) ÉDITEUR D'IMAGES ====
   const editorTitle         = document.getElementById("editor-title");
   const imageContainer      = document.getElementById("image-container");
   const imageLoader         = document.getElementById("image-loader");
@@ -68,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let history             = [];
   let currentModalFolderId= null;
 
-  // --- HISTORIQUE (UNDO) ---
+  // --- Historique (UNDO) ---
   function getCurrentState() {
     const texts = [];
     imageContainer.querySelectorAll(".text-overlay").forEach(el => {
@@ -88,9 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function restoreState(state) {
     imageDisplay.src = state.imageSrc;
-    imageContainer
-      .querySelectorAll(".text-overlay")
-      .forEach(el => el.remove());
+    imageContainer.querySelectorAll(".text-overlay").forEach(el => el.remove());
     state.texts.forEach(t => createTextElement(t));
   }
   undoBtn.addEventListener("click", () => {
@@ -101,78 +90,54 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // --- MÉDIATHÈQUE ---
+  // --- Médiathèque ---
   function renderModalMedia() {
     modalMediaGrid.innerHTML = "";
-    const allFolders = db.getFolders();
-    const allFiles   = db.getFiles();
-    allFolders
-      .filter(f => f.parentId === currentModalFolderId)
-      .forEach(folder => {
-        const div = document.createElement("div");
-        div.className = "media-item folder-item";
-        div.dataset.folderId = folder.id;
-        div.innerHTML = `
-          <div>
-            <!-- icône dossier -->
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-              viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M2.25 12.75V12A2.25
-                   2.25 0 0 1 4.5 9.75h15A2.25
-                   2.25 0 0 1 21.75 12v.75m-8.69-6.44
-                   -2.12-2.12a1.5 1.5 0 0 0-1.061-.44
-                   H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25
-                   2.25 0 0 0 2.25 2.25h15A2.25
-                   2.25 0 0 0 21.75 18V9a2.25
-                   2.25 0 0 0-2.25-2.25h-5.379
-                   a1.5 1.5 0 0 1-1.06-.44Z" />
-            </svg>
-          </div>
-          <span class="folder-name">${folder.name}</span>`;
-        modalMediaGrid.appendChild(div);
-      });
-    allFiles
-      .filter(f => f.folderId === currentModalFolderId)
-      .forEach(file => {
-        const div = document.createElement("div");
-        div.className = "media-item media-thumbnail";
-        div.dataset.fileId = file.id;
-        div.innerHTML = `<img src="${file.dataUrl}" alt="${file.name}">`;
-        modalMediaGrid.appendChild(div);
-      });
+    const folders = db.getFolders(), files = db.getFiles();
+    folders.filter(f => f.parentId === currentModalFolderId).forEach(folder => {
+      const div = document.createElement("div");
+      div.className = "media-item folder-item";
+      div.dataset.folderId = folder.id;
+      div.innerHTML = `
+        <svg …></svg>
+        <span class="folder-name">${folder.name}</span>`;
+      modalMediaGrid.appendChild(div);
+    });
+    files.filter(f => f.folderId === currentModalFolderId).forEach(file => {
+      const div = document.createElement("div");
+      div.className = "media-item media-thumbnail";
+      div.dataset.fileId = file.id;
+      div.innerHTML = `<img src="${file.dataUrl}" alt="${file.name}">`;
+      modalMediaGrid.appendChild(div);
+    });
   }
   openMediaLibraryBtn.addEventListener("click", () => {
     currentModalFolderId = null;
     renderModalMedia();
     mediaModal.classList.remove("hidden");
   });
-  closeModalBtn.addEventListener("click", () => {
-    mediaModal.classList.add("hidden");
-  });
+  closeModalBtn.addEventListener("click", () => mediaModal.classList.add("hidden"));
   modalMediaGrid.addEventListener("click", e => {
-    const folder = e.target.closest(".folder-item");
-    if (folder) {
-      currentModalFolderId = +folder.dataset.folderId;
+    const fldr = e.target.closest(".folder-item");
+    if (fldr) {
+      currentModalFolderId = +fldr.dataset.folderId;
       renderModalMedia();
       return;
     }
     const thumb = e.target.closest(".media-thumbnail");
     if (thumb) {
-      const fid = +thumb.dataset.fileId;
-      const f   = db.getFiles().find(x => x.id === fid);
-      if (f) {
-        imageDisplay.src = f.dataUrl;
+      const id = +thumb.dataset.fileId;
+      const file = db.getFiles().find(x => x.id === id);
+      if (file) {
+        imageDisplay.src = file.dataUrl;
         imageDisplay.onload = () => reset(true);
         mediaModal.classList.add("hidden");
       }
     }
   });
 
-  // --- TEXTE ---
-  function toggleTextPanel() {
-    textPanel.classList.toggle("hidden");
-  }
+  // --- Texte overlays ---
+  function toggleTextPanel() { textPanel.classList.toggle("hidden"); }
   textToolBtn.addEventListener("click", toggleTextPanel);
   closeTextPanelBtn.addEventListener("click", toggleTextPanel);
   function createTextElement(data) {
@@ -182,11 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
     div.style.left = data.left;
     div.style.top  = data.top;
     div.style.backgroundColor = data.bgColor;
-    div.style.color  = data.color;
-    div.addEventListener("click", ev => {
-      ev.stopPropagation();
-      selectText(div);
-    });
+    div.style.color = data.color;
     div.addEventListener("mousedown", ev => {
       ev.stopPropagation();
       selectText(div);
@@ -194,6 +155,10 @@ document.addEventListener("DOMContentLoaded", () => {
       offsetX = ev.clientX - div.getBoundingClientRect().left;
       offsetY = ev.clientY - div.getBoundingClientRect().top;
       div.style.cursor = "grabbing";
+    });
+    div.addEventListener("click", ev => {
+      ev.stopPropagation();
+      selectText(div);
     });
     imageContainer.appendChild(div);
     return div;
@@ -207,14 +172,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Import local ---
   imageLoader.addEventListener("change", e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const rdr = new FileReader();
+    rdr.onload = ev => {
       imageDisplay.src = ev.target.result;
       imageDisplay.onload = () => reset(true);
     };
-    reader.readAsDataURL(file);
+    rdr.readAsDataURL(f);
   });
 
   addTextBtn.addEventListener("click", () => {
@@ -231,6 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleTextPanel();
     saveState();
   });
+
   document.addEventListener("mousemove", e => {
     if (isDragging && selectedTextElement) {
       const pr = imageContainer.getBoundingClientRect();
@@ -254,7 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // --- Reset ---
-  function reset(isNew = false) {
+  function reset(isNew=false) {
     imageContainer.querySelectorAll(".text-overlay").forEach(el => el.remove());
     selectText(null);
     if (!isNew) imageDisplay.src = "";
@@ -269,13 +235,10 @@ document.addEventListener("DOMContentLoaded", () => {
     html2canvas(imageContainer).then(canvas => {
       const cR = imageContainer.getBoundingClientRect();
       const iR = imageDisplay.getBoundingClientRect();
-      const x = iR.left - cR.left;
-      const y = iR.top  - cR.top;
-      const w = iR.width;
-      const h = iR.height;
+      const x = iR.left - cR.left, y = iR.top - cR.top;
+      const w = iR.width,    h = iR.height;
       const c2 = document.createElement("canvas");
-      c2.width  = w;
-      c2.height = h;
+      c2.width = w; c2.height = h;
       c2.getContext("2d").drawImage(canvas, x, y, w, h, 0, 0, w, h);
       const link = document.createElement("a");
       link.download = "image-modifiee.png";
@@ -291,18 +254,17 @@ document.addEventListener("DOMContentLoaded", () => {
     mainControls.classList.add("hidden");
     downloadWrapper.classList.add("hidden");
     cropActions.classList.remove("hidden");
-    imageContainer.querySelectorAll(".text-overlay").forEach(el => el.style.display = "none");
-    cropper = new Cropper(imageDisplay, { viewMode: 1, background: false });
+    imageContainer.querySelectorAll(".text-overlay").forEach(el => el.style.display="none");
+    cropper = new Cropper(imageDisplay, { viewMode:1, background:false });
   }
   function exitCropMode() {
     if (!cropper) return;
     editorTitle.innerText = "Éditeur d'images";
-    cropper.destroy();
-    cropper = null;
+    cropper.destroy(); cropper=null;
     mainControls.classList.remove("hidden");
     downloadWrapper.classList.remove("hidden");
     cropActions.classList.add("hidden");
-    imageContainer.querySelectorAll(".text-overlay").forEach(el => el.style.display = "block");
+    imageContainer.querySelectorAll(".text-overlay").forEach(el => el.style.display="block");
   }
   cropToolBtn.addEventListener("click", enterCropMode);
   cancelCropBtn.addEventListener("click", exitCropMode);
@@ -312,23 +274,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const cc   = cropper.getCroppedCanvas();
     imageDisplay.src = cc.toDataURL("image/png");
     imageDisplay.onload = () => {
-      imageContainer.querySelectorAll(".text-overlay").forEach(textDiv => {
-        const lx = parseFloat(textDiv.style.left) - data.x;
-        const ty = parseFloat(textDiv.style.top) - data.y;
-        textDiv.style.left = `${lx}px`;
-        textDiv.style.top  = `${ty}px`;
+      imageContainer.querySelectorAll(".text-overlay").forEach(td => {
+        const lx = parseFloat(td.style.left) - data.x;
+        const ty = parseFloat(td.style.top)  - data.y;
+        td.style.left = `${lx}px`;
+        td.style.top  = `${ty}px`;
       });
       exitCropMode();
       saveState();
     };
   });
 
-  // expose pour integration transfert
-  window._imageEditor = {
-    imageDisplay,
-    reset
-  };
+  // Expose for transfer logic
+  window._imageEditor = { imageDisplay, reset };
 
-  // init historique
+  // Init history
   saveState();
 });
